@@ -27,7 +27,7 @@ module "vnet" {
 }
 
 module "source-peering" {
-  source                = "../../..//modules/version1.0.0/alz-peering"
+  source                = "../../module/alz-peering"
   create_target_peering = false
   peering_name_source   = "Peering-Test"
   peering_name_target   = "monitoring"
