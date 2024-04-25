@@ -1,24 +1,3 @@
-terraform {
-  required_version = ">=1.5.7"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">=3.33.0"
-    }
-  }
-  backend "azurerm" {
-    storage_account_name = "samojtfstate001"
-    resource_group_name  = "rg-terraform-statefiles-001"
-    container_name       = "tfstatepullrequest"
-    key                  = "alzpeering.terraform.tfstate"
-  }
-}
-provider "azurerm" {
-  # whilst the `version` attribute is optional, we recommend pinning to a given version of the Provider
-  features {}
-  tenant_id       = var.tenant_id
-  subscription_id = var.subscription_id
-}
 locals {
   subname = "pr"
 
@@ -36,6 +15,7 @@ resource "azurerm_resource_group" "rg" {
   location = "UK South"
   tags     = var.tags
 }
+
 module "vnet" {
   source              = "github.com/ministryofjustice/staff-infrastructure-alz-terraform-vnet//modules/alz-vnet?ref=v1.0.0"
   location            = azurerm_resource_group.rg.location
@@ -45,6 +25,7 @@ module "vnet" {
   vnet_name           = "vnet-pr-alz-peering-001"
   vnet_address_space  = var.vnet_address_space
 }
+
 module "source-peering" {
   source                = "../../..//modules/version1.0.0/alz-peering"
   create_target_peering = false
