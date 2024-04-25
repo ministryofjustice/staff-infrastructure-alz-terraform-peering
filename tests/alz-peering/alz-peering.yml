@@ -1,0 +1,89 @@
+trigger:
+  - none
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - module/alz-peering
+      - tests/alz-peering/alz-peering.yml
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: ministryofjustice/staff-infrastructure-alz-ci-templates
+      ref: refs/heads/main
+      endpoint: staff-infrastructure-alz-ci-templates
+
+variables:
+  - group: "github"
+  - name: applyOnPr # always apply because this is a PR (this var is checked in apply conditional inside deploy template)
+    value: true
+  - name: destoryyamlenv
+    ${{ if eq(variables['Build.Reason'],'PullRequest') }}:
+      value: destroy_approval
+    ${{ if ne(variables['Build.Reason'],'PullRequest') }}:
+      value: destroy_approval
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - template: azdo/template-terraform-deploy-stage.yml@templates
+    parameters:
+      deployFlag: true
+      stageName: "Deploy_Infra"
+      stageDisplayName: "Deploy Infra"
+      spokeName: pr
+      tenant_id: 0bb413d7-160d-4839-868a-f3d46537f6af
+      subscription_id: 4b068872-d9f3-41bc-9c34-ffac17cf96d6
+      backendServiceArm: scVLZ
+      backendAzureRmResourceGroupName: rg-terraform-statefiles-001
+      backendAzureRmStorageAccountName: samojtfstate001
+      backendAzureRmContainerName: tfstatepullrequest
+      backendAzureRmKey: "alzpeering.terraform.tfstate"
+      workingDirectory: "$(System.DefaultWorkingDirectory)/staff-infrastructure-alz-terraform-peering/tests/alz-peering"
+      yamlenv: "pr_exclusivelock"
+      applyTfChanges: true
+      terraformVersion: "1.5.7"
+      
+  - stage: Test_Deployed_Infra
+    displayName: Test_Deployed_Infra
+    dependsOn: Deploy_Infra
+    jobs:
+      - job: Test
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: scVLZ
+              scriptType: pscore
+              scriptPath: "$(System.DefaultWorkingDirectory)/tests/alz-peering/tests/alz-peering-tests.ps1"
+              arguments: "-Path $(System.DefaultWorkingDirectory)/tests/alz-peering"
+              workingDirectory: $(System.DefaultWorkingDirectory)/tests/
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFormat: "NUnit"
+              testResultsFiles: "$(System.DefaultWorkingDirectory)/tests/alz-peering/testResults.xml"
+              failTaskOnFailedTests: false
+
+  - template: azdo/template-terraform-destroy-stage.yml@templates
+    parameters:
+      destroyFlag: true
+      stageName: "Destroy_Infra"
+      stageDisplayName: "Destroy Infra"
+      spokeName: pr
+      tenant_id: 0bb413d7-160d-4839-868a-f3d46537f6af
+      subscription_id: 4b068872-d9f3-41bc-9c34-ffac17cf96d6
+      backendServiceArm: scVLZ
+      backendAzureRmResourceGroupName: rg-terraform-statefiles-001
+      backendAzureRmStorageAccountName: samojtfstate001
+      backendAzureRmContainerName: tfstatepullrequest
+      backendAzureRmKey: "alzpeering.terraform.tfstate"
+      workingDirectory: "$(System.DefaultWorkingDirectory)/staff-infrastructure-alz-terraform-peering/tests/alz-peering"
+      yamlenv: $(destoryyamlenv) # "pr_exclusivelock" <----need to find a way to pass two azdo environment value i.e. $(destoryyamlenv) and "pr_exclusivelock
+      applyTfChanges: true
+      terraformVersion: "1.5.7"
+      dependsOn: [Test_Deployed_Infra]
