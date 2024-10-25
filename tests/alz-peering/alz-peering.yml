@@ -48,7 +48,7 @@ stages:
       workingDirectory: "$(System.DefaultWorkingDirectory)/staff-infrastructure-alz-terraform-peering/tests/alz-peering"
       yamlenv: "pr_exclusivelock"
       applyTfChanges: true
-      terraformVersion: "1.5.7"
+      terraformVersion: "1.9.8"
       
   - stage: Test_Deployed_Infra
     displayName: Test_Deployed_Infra
@@ -85,5 +85,5 @@ stages:
       workingDirectory: "$(System.DefaultWorkingDirectory)/staff-infrastructure-alz-terraform-peering/tests/alz-peering"
       yamlenv: $(destoryyamlenv) # "pr_exclusivelock" <----need to find a way to pass two azdo environment value i.e. $(destoryyamlenv) and "pr_exclusivelock
       applyTfChanges: true
-      terraformVersion: "1.5.7"
+      terraformVersion: "1.9.8"
       dependsOn: [Test_Deployed_Infra]
