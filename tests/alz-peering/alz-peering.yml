@@ -49,7 +49,7 @@ stages:
       yamlenv: "pr_exclusivelock"
       applyTfChanges: true
       terraformVersion: "1.9.8"
-      
+
   - stage: Test_Deployed_Infra
     displayName: Test_Deployed_Infra
     dependsOn: Deploy_Infra
